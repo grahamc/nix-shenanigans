@@ -1,3 +1,4 @@
+```
 nix-repl> :l build.nix
 Added 1 variables.
 
@@ -15,3 +16,4 @@ nix-repl> :p flat
   top-zip-1-top = «derivation /nix/store/db6559qm5fd5aw8xs8gzqb15q0pr4x08-zip.1.top.drv»;
   top-zip-2 = «derivation /nix/store/hwaxxvm3ixkz9fc3pa9b7r9y654519xk-zip.2.drv»;
 }
+```
