@@ -1,8 +1,17 @@
 {}:
 let
   pkgs = import <nixpkgs> {};
-  example = name: (if false then name else pkgs.writeText name name);
+  example = name: pkgs.stdenv.mkDerivation {
+    name = name;
+
+    phases = ["installPhase"];
+
+    installPhase = ''
+      echo "${name}" > $out
+    '';
+  };
 in {
+  lol = "lol";
   foo = example "foo";
 
   too = {}: example "foo";

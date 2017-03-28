@@ -11,43 +11,54 @@ let
   loadInput = src: callOrRet (import src);
 
   flatten = val:
-    builtins.listToAttrs (
-    if lib.isList val then (flattenListToAttrList "top" val)
-    else if lib.isAttrs val then (flattenAttrsetToAttrList "top" val)
-    else throw "flatten can't handle this? ${val}"
-    );
+    map
+      (elem:
+        let
+          attr = builtins.concatStringsSep "." elem.path;
+        in elem // { attr = attr; }
+      )
+      (
+        if lib.isList val then (flattenListToAttrList [] val)
+        else if lib.isAttrs val then (flattenAttrsetToAttrList [] val)
+        else throw "flatten can't handle this? ${val}"
+      );
 
-  flatten' = prefix: val:
+  flatten' = path: val:
     (
-      if lib.isDerivation val then [(lib.nameValuePair prefix val)]
-      else if lib.isBool val then [(lib.nameValuePair prefix val)]
-      else if lib.isInt val then [(lib.nameValuePair prefix val)]
-      else if lib.isString val then [(lib.nameValuePair prefix val)]
-      else if lib.isFunction val then (flatten' prefix (val {}))
-      else if lib.isList val then (flattenListToAttrList prefix val)
-      else if lib.isAttrs val then (flattenAttrsetToAttrList prefix val)
+      if lib.isDerivation val then (pathValueElem path val)
+      else if lib.isBool val then (pathValueElem path val)
+      else if lib.isInt val then (pathValueElem path val)
+      else if lib.isString val then (pathValueElem path val)
+      else if lib.isFunction val then (flatten' path (val {}))
+      else if lib.isList val then (flattenListToAttrList path val)
+      else if lib.isAttrs val then (flattenAttrsetToAttrList path val)
       else throw "flatten' can't handle this? ${val}"
     );
 
-  flattenAttrsetToAttrList = prefix: attrset:
+  pathValueElem = path: value: [{
+    path = path;
+    value = value;
+  }];
+
+  flattenAttrsetToAttrList = path: attrset:
     let
       keys = builtins.attrNames attrset;
     in builtins.concatLists (
         map (key: (
           let
-            ident = "${prefix}.${key}";
+            ident = path ++ [key];
             curValue = (builtins.getAttr key attrset);
           in flatten' ident curValue
         )) keys
       )
     ;
 
-  flattenListToAttrList = prefix: xs:
+  flattenListToAttrList = path: xs:
     builtins.concatLists
       (lib.imap
         (i: v:
           let
-            ident = "${prefix}-${toString (i - 1)}";
+            ident = path ++ ["${toString (i - 1)}"];
           in
             flatten' ident v
         )
